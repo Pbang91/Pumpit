@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: Pumpit
+
+  profiles:
+    active: local  # 기본 실행 프로파일 (local, dev, prod)
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: true
+
+server:
+  error:
+    include-message: always  # 에러 메시지 포함

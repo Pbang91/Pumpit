@@ -1,0 +1,567 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-init-tables
+      author: GGPARK
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            tableExists:
+              tableName: users
+
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: nick_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+                    unique: true
+              - column:
+                  name: password
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: user_oauth_accounts
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_user_oauth_accounts_users
+                    references: users(id)
+              - column:
+                  name: provider
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider_user_id
+                  type: text
+              - column:
+                  name: access_token
+                  type: text
+              - column:
+                  name: refresh_token
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: workout_categories
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+        - createTable:
+            tableName: workout_exercises
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: category_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_workout_exercises_categories
+                    references: workout_categories(id)
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+        - createTable:
+            tableName: workout_records
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_workout_records_users
+                    references: users(id)
+              - column:
+                  name: category_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_workout_records_categories
+                    references: workout_categories(id)
+              - column:
+                  name: exercise_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_workout_records_exercises
+                    references: workout_exercises(id)
+              - column:
+                  name: duration
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: workout_time
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: workout_record_details
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: record_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_workout_record_details_workout_record
+                    references: workout_records(id)
+              - column:
+                  name: sets
+                  type: smallint
+              - column:
+                  name: reps
+                  type: smallint
+              - column:
+                  name: weight
+                  type: numeric(5, 2)
+              - column:
+                  name: distance
+                  type: numeric(5, 2)
+              - column:
+                  name: speed
+                  type: numeric(5, 2)
+              - column:
+                  name: lap_time
+                  type: smallint
+              - column:
+                  name: hold_time
+                  type: smallint
+
+        - createTable:
+            tableName: posts
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_posts_user
+                    references: users(id)
+              - column:
+                  name: title
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: post_images
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: post_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_post_images_post
+                    references: posts(id)
+              - column:
+                  name: url
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: comments
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: post_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_comments_post
+                    references: posts(id)
+              - column:
+                  name: user_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_comments_user
+                    references: users(id)
+              - column:
+                  name: content
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: image_url
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: likes
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_likes_user
+                    references: users(id)
+              - column:
+                  name: target_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_type
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - addUniqueConstraint:
+            tableName: likes
+            columnNames: user_id, target_id, target_type
+            constraintName: const_like_user
+            deferrable: true
+            disabled: true
+            validate: true
+
+        - createTable:
+            tableName: user_followers
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: follower_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_user_followers_follower
+                    references: users(id)
+              - column:
+                  name: following_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_user_followers_following
+                    references: users(id)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: chat_rooms
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: is_group
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: name
+                  type: varchar(255)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: chat_room_members
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: room_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_chat_room_members_chat_rooms
+                    references: chat_rooms(id)
+              - column:
+                  name: user_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_chat_room_members_users
+                    references: users(id)
+              - column:
+                  name: joined_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: left_at
+                  type: timestamp
+
+        - addUniqueConstraint:
+            tableName: chat_room_members
+            columnNames: room_id, user_id
+            constraintName: const_room_user
+            deferrable: true
+            disabled: true
+            validate: true
+
+        - createTable:
+            tableName: chat_messages
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: room_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_chat_messages_chat_rooms
+                    references: chat_rooms(id)
+              - column:
+                  name: sender_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_chat_messages_users
+                    references: users(id)
+              - column:
+                  name: type
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content
+                  type: text
+              - column:
+                  name: is_deleted
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - createTable:
+            tableName: chat_message_files
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: message_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_chat_message_files_chat_message
+                    references: chat_messages(id)
+              - column:
+                  name: url
+                  type: text
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: chat_message_reads
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: message_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_chat_message_reads_chat_message
+                    references: chat_messages(id)
+              - column:
+                  name: user_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_chat_message_reads_user
+                    references: users(id)
+              - column:
+                  name: read_at
+                  type: timestamp
+
+        - addUniqueConstraint:
+            tableName: chat_message_reads
+            columnNames: message_id, user_id
+            constraintName: const_message_read_user
+            deferrable: true
+            disabled: true
+            validate: true
+
+        - createTable:
+            tableName: notifications
+            columns:
+              - column:
+                  name: id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigserial
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_notifications_users
+                    references: users(id)
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_id
+                  type: bigserial
+              - column:
+                  name: target_type
+                  type: varchar(50)
+              - column:
+                  name: message
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_read
+                  type: boolean
+                  defaultValueBoolean: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
