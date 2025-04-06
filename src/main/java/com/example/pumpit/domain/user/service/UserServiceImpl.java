@@ -1,7 +1,8 @@
 package com.example.pumpit.domain.user.service;
 
+import com.example.pumpit.domain.user.dto.req.LoginUserReqDto;
 import com.example.pumpit.domain.user.dto.req.RegisterUserReqDto;
-import com.example.pumpit.domain.user.dto.res.RegisterUserResDto;
+import com.example.pumpit.domain.user.dto.res.LoginUserResDto;
 import com.example.pumpit.domain.user.enums.RegisterUserType;
 import com.example.pumpit.domain.user.repository.UserRepository;
 import com.example.pumpit.global.entity.User;
@@ -39,8 +40,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User findUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomerExceptionData.USER_NOT_FOUND));
+    }
+
+    @Override
     @Transactional
-    public RegisterUserResDto registerUser(RegisterUserReqDto dto) {
+    public LoginUserResDto registerUser(RegisterUserReqDto dto) {
         if (dto.type().equals(RegisterUserType.EMAIL)) {
             if (existingUserByEmail(dto.email())) {
                 throw new CustomException(CustomerExceptionData.USER_DUPLICATED);
@@ -55,9 +62,29 @@ public class UserServiceImpl implements UserService {
             User savedUser = userRepository.save(user);
             String accessToken = jwtService.generateAccessToken(savedUser.getId());
 
-            return RegisterUserResDto.builder().accessToken(accessToken).build();
+            return LoginUserResDto.builder().accessToken(accessToken).build();
         }
 
         return null;
+    }
+
+    @Override
+    public LoginUserResDto loginUser(LoginUserReqDto dto) {
+        if (dto.email() != null && dto.password() != null) {
+            User user = findUserByEmail(dto.email());
+
+            if (!PasswordEncoder.matches(dto.password(), user.getPassword())) {
+                throw new CustomException(CustomerExceptionData.USER_PASSWORD_NOT_MATCH);
+            }
+
+            String accessToken = jwtService.generateAccessToken(user.getId());
+
+            return LoginUserResDto.builder()
+                    .accessToken(accessToken)
+                    .build();
+        } else {
+            // TODO: Oatuh2 로그인 구현
+            return null;
+        }
     }
 }

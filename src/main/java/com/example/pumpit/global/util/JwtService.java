@@ -5,7 +5,6 @@ import com.example.pumpit.global.exception.enums.CustomerExceptionData;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -77,20 +76,10 @@ public class JwtService {
         return createJwt(claims);
     }
 
-    public String resolveAccessToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-
-        return null;
-    }
-
     public Authentication getAuthentication(String token) {
         Claims claims = parseJwt(token);
 
-        String userId = claims.get("userId", String.class);
+        Long userId = claims.get("userId", Long.class);
         String role = claims.get("role", String.class);
 
         List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(role);
@@ -100,7 +89,7 @@ public class JwtService {
                 authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
             }
 
-            CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(userId);
+            CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(userId.toString());
             CustomUserDetails customUserDetails = new CustomUserDetails(userDetails.getUser(), authorities);
 
             return new UsernamePasswordAuthenticationToken(customUserDetails, null, authorities);
