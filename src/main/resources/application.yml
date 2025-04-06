@@ -10,6 +10,8 @@ spring:
       ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+      jdbc:
+        time-zone: UTC
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -19,3 +21,17 @@ spring:
 server:
   error:
     include-message: always  # 에러 메시지 포함
+
+jwt:
+  token:
+    secret: dlfjgrptlzmfltdmf1gksekauschlth32wkdltkddlaqehlfrjdkdu
+    expiration: 86400000  # 1 day milliseconds
+
+springdoc:
+  version: '@project.version@'
+  swagger-ui:
+    path: /api-docs
+    groups-order: DESC
+    tags-sorter: alpha
+    operations-sorter: method
+  paths-to-match: /api/**

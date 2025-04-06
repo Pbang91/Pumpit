@@ -17,10 +17,18 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.liquibase:liquibase-core")
     runtimeOnly("org.postgresql:postgresql") // PostgreSQL 사용
+    implementation("org.springframework.boot:spring-boot-starter-security") // Spring Security
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0") // SpringDoc OpenAPI
+    implementation("io.jsonwebtoken:jjwt-api:0.12.3") // JWT API
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3") // JWT 구현체
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3") // Jackson을 사용한 JWT 구현체
+    compileOnly("org.projectlombok:lombok") // Lombok
+    annotationProcessor("org.projectlombok:lombok") // Lombok annotation processor
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
+
 
 test {
     useJUnitPlatform()
