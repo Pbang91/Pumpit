@@ -1,6 +1,6 @@
 package com.example.pumpit.global.filter;
 
-import com.example.pumpit.global.exception.enums.CustomerExceptionData;
+import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import com.example.pumpit.global.util.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -56,8 +56,8 @@ public class JwtAutFilter extends OncePerRequestFilter {
                             "details": "%s"
                         }
                         """.formatted(
-                                CustomerExceptionData.JWT_TOKEN_INVALID.getCode(),
-                                CustomerExceptionData.JWT_TOKEN_INVALID.getDescription(),
+                                CustomExceptionData.JWT_TOKEN_INVALID.getCode(),
+                                CustomExceptionData.JWT_TOKEN_INVALID.getDescription(),
                                 e.getMessage()
                 );
 

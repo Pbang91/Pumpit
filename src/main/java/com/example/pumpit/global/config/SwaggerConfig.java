@@ -2,7 +2,7 @@ package com.example.pumpit.global.config;
 
 import com.example.pumpit.global.exception.annotation.ApiExceptionData;
 import com.example.pumpit.global.exception.annotation.ApiExceptionResponse;
-import com.example.pumpit.global.exception.enums.CustomerExceptionData;
+import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.models.Components;
@@ -61,7 +61,7 @@ public class SwaggerConfig {
                 HashMap<HttpStatus, Map<String, Example>> statusToExamples = new HashMap<>();
 
                 for (ApiExceptionData exceptionData : exceptionDataList) {
-                    CustomerExceptionData errorCode = exceptionData.errorCode();
+                    CustomExceptionData errorCode = exceptionData.errorCode();
                     String details = exceptionData.details();
 
                     Map<String, Object> exampleBody = Map.of(

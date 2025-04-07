@@ -1,7 +1,7 @@
 package com.example.pumpit.global.util;
 
 import com.example.pumpit.global.exception.CustomException;
-import com.example.pumpit.global.exception.enums.CustomerExceptionData;
+import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -25,20 +25,23 @@ import io.jsonwebtoken.Jwts;
 public class JwtService {
     @Value("${jwt.token.secret}")
     private String SECRET;
-    @Value("${jwt.token.expiration}")
-    private String EXPIRATION;
+    @Value("${jwt.token.access.expiration}")
+    private String ACCESS_TOKEN_EXPIRATION;
+    @Value("${jwt.token.refresh.expiration}")
+    private String REFRESH_TOKEN_EXPIRATION;
+
     private final UserDetailsService userDetailsService;
 
     public JwtService(UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
 
-    private String createJwt(Map<String, Object> claims) {
+    private String createJwt(Map<String, Object> claims, String expirationTime) {
         long expiration;
         long now = System.currentTimeMillis();
 
         try {
-            expiration = Long.parseLong(EXPIRATION);
+            expiration = Long.parseLong(expirationTime);
         } catch (NumberFormatException e) {
             expiration = 1000L * 60 * 60; // Default to 1 hours if parsing fails
         }
@@ -64,7 +67,7 @@ public class JwtService {
 
         claims.put("userId", userId);
 
-        return createJwt(claims);
+        return createJwt(claims, ACCESS_TOKEN_EXPIRATION);
     }
 
     public String generateAccessToken(Long userId, String role) {
@@ -73,7 +76,15 @@ public class JwtService {
         claims.put("userId", userId);
         claims.put("role", role);
 
-        return createJwt(claims);
+        return createJwt(claims, ACCESS_TOKEN_EXPIRATION);
+    }
+
+    public String generateRefreshToken(Long userId) {
+        Map<String, Object> claims = new HashMap<>();
+
+        claims.put("userId", userId);
+
+        return createJwt(claims, REFRESH_TOKEN_EXPIRATION);
     }
 
     public Authentication getAuthentication(String token) {
@@ -95,6 +106,6 @@ public class JwtService {
             return new UsernamePasswordAuthenticationToken(customUserDetails, null, authorities);
         }
 
-        throw new CustomException(CustomerExceptionData.INTERVAL_SERVER_ERROR, "토큰 정보 오류");
+        throw new CustomException(CustomExceptionData.INTERVAL_SERVER_ERROR, "토큰 정보 오류");
     }
 }

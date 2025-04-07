@@ -3,7 +3,7 @@ package com.example.pumpit.global.util;
 import com.example.pumpit.domain.user.repository.UserRepository;
 import com.example.pumpit.global.entity.User;
 import com.example.pumpit.global.exception.CustomException;
-import com.example.pumpit.global.exception.enums.CustomerExceptionData;
+import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,7 +20,7 @@ public class CustomerUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
         User user = userRepository.findById(Long.parseLong(userId)).orElseThrow(() ->
-                new CustomException(CustomerExceptionData.USER_UNAUTHORIZED));
+                new CustomException(CustomExceptionData.USER_UNAUTHORIZED));
 
         return new CustomUserDetails(user);
     }

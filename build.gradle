@@ -24,6 +24,8 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3") // Jackson을 사용한 JWT 구현체
     compileOnly("org.projectlombok:lombok") // Lombok
     annotationProcessor("org.projectlombok:lombok") // Lombok annotation processor
+    implementation("org.springframework.boot:spring-boot-starter-data-redis") // Redis
+    implementation("org.apache.commons:commons-pool2") // Redis connection pool
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'

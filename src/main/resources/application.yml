@@ -25,13 +25,19 @@ server:
 jwt:
   token:
     secret: dlfjgrptlzmfltdmf1gksekauschlth32wkdltkddlaqehlfrjdkdu
-    expiration: 86400000  # 1 day milliseconds
+    access:
+      expiration: 86400000  # 1 day milliseconds
+    refresh:
+      expiration: 604800000  # 7 days milliseconds
 
 springdoc:
   version: '@project.version@'
-  swagger-ui:
+  api-docs:
     path: /api-docs
+  swagger-ui:
     groups-order: DESC
     tags-sorter: alpha
     operations-sorter: method
   paths-to-match: /api/**
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json

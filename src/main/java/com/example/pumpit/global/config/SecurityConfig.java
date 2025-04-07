@@ -26,14 +26,14 @@ public class SecurityConfig {
                                 authorizeRequests
                                         .requestMatchers(
                                                 "/swagger-ui/**",
-                                                "/swagger-resource/**",
-                                                "/v3/api-docs/**"
+                                                "/api-docs/**"
                                         )
                                         .permitAll()
                                         .requestMatchers(
                                                 HttpMethod.POST,
-                                                "/api/v1/user",
-                                                "/api/v1/user/login"
+                                                "/api/v1/user/email/**",
+                                                "/api/v1/user/oauth2/**",
+                                                "/api/v1/user/auth"
                                         ).permitAll()
                                         .anyRequest().authenticated()
                 )

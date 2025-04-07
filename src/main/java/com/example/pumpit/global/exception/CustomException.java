@@ -1,20 +1,20 @@
 package com.example.pumpit.global.exception;
 
-import com.example.pumpit.global.exception.enums.CustomerExceptionData;
+import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import lombok.Getter;
 
 @Getter
 public class CustomException extends RuntimeException {
-    private final CustomerExceptionData errorCode;
+    private final CustomExceptionData errorCode;
     private String details = "";
 
-    public CustomException(CustomerExceptionData data) {
+    public CustomException(CustomExceptionData data) {
         super(data.getDescription());
 
         this.errorCode = data;
     }
 
-    public CustomException(CustomerExceptionData data, String details) {
+    public CustomException(CustomExceptionData data, String details) {
         super(data.getDescription() + " " + details);
 
         this.errorCode = data;
