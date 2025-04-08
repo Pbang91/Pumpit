@@ -14,6 +14,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
@@ -24,10 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @OpenAPIDefinition(
-        info = @Info(
-                title = "PumpIt API",
-                description = "PumpIt API Documentation"
-        )
+        info = @Info(title = "PumpIt API", description = "API 설명서입니다", version = "v1")
 )
 @Configuration
 public class SwaggerConfig {
@@ -99,11 +97,43 @@ public class SwaggerConfig {
     }
 
     @Bean
+    public OpenApiCustomizer globalExceptionCustomizer() {
+        return openApi -> openApi.getPaths().values().forEach(pathItem ->
+                pathItem.readOperations().forEach(operation -> {
+                    // 이미 정의된 응답에 500이 없다면 추가
+                    if (!operation.getResponses().containsKey("500")) {
+                        Map<String, Object> exampleBody = Map.of(
+                                "code", CustomExceptionData.INTERVAL_SERVER_ERROR.getCode(),
+                                "description", CustomExceptionData.INTERVAL_SERVER_ERROR.getDescription(),
+                                "details", ""
+                        );
+
+                        Example example = new Example()
+                                .summary(CustomExceptionData.INTERVAL_SERVER_ERROR.getCode())
+                                .value(exampleBody);
+
+                        Content content = new Content().addMediaType(
+                                "application/json",
+                                new MediaType().addExamples(CustomExceptionData.INTERVAL_SERVER_ERROR.getCode(), example)
+                        );
+
+                        ApiResponse apiResponse = new ApiResponse()
+                                .description("Internal Server Error")
+                                .content(content);
+
+                        operation.getResponses().addApiResponse("500", apiResponse);
+                    }
+                })
+        );
+    }
+
+    @Bean
     public GroupedOpenApi v1Api() {
         return GroupedOpenApi.builder()
                 .group("v1")
                 .pathsToMatch("/api/v1/**")
                 .addOperationCustomizer(operationCustomizer())
+                .addOpenApiCustomizer(globalExceptionCustomizer())
                 .build();
     }
 }

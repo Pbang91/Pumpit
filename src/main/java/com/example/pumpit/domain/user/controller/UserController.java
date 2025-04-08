@@ -52,6 +52,12 @@ public class UserController {
     @SecurityRequirements
     @Operation(summary = "email 로그인 API", description = "email 로그인 API입니다")
     @ResponseStatus(HttpStatus.OK)
+    @ApiExceptionResponse(
+            value = {
+                    @ApiExceptionData(errorCode = CustomExceptionData.USER_PASSWORD_NOT_MATCH),
+                    @ApiExceptionData(errorCode = CustomExceptionData.USER_NOT_FOUND)
+            }
+    )
     public ResponseEntity<ApiSuccessResDto<LoginUserRequestTokenResDto>> loginUser(
             @Valid @RequestBody LoginUserByEmailReqDto dto
     ) {
@@ -65,9 +71,15 @@ public class UserController {
     @SecurityRequirements
     @Operation(summary = "OAuth2 회원가입 API", description = "OAuth2를 통한 회원가입을 진행합니다.")
     @ResponseStatus(HttpStatus.OK)
+    @ApiExceptionResponse(
+            value = {
+                    @ApiExceptionData(errorCode = CustomExceptionData.AUTH_CODE_NOT_FOUND)
+            }
+    )
     public ResponseEntity<ApiSuccessResDto<?>> registerUserByOauth2(
             @Valid @RequestBody RegisterUserByOAuthReqDto dto
     ) {
+        // TODO : OAuth2 회원가입 API 구현
         return null;
     }
 

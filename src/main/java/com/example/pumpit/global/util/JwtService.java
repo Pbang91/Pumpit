@@ -14,10 +14,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import io.jsonwebtoken.Jwts;
 
@@ -93,7 +90,7 @@ public class JwtService {
         Long userId = claims.get("userId", Long.class);
         String role = claims.get("role", String.class);
 
-        List<GrantedAuthority> authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(role);
+        List<GrantedAuthority> authorities = new ArrayList<>();
 
         if (userId != null) {
             if (role != null) {
