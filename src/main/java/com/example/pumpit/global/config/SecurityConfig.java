@@ -1,5 +1,7 @@
 package com.example.pumpit.global.config;
 
+import com.example.pumpit.global.exception.CustomAccessDeniedHandler;
+import com.example.pumpit.global.exception.CustomAuthenticationEntryPoint;
 import com.example.pumpit.global.filter.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +17,17 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
     private final JwtAuthFilter jwtAutFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
-    public SecurityConfig(JwtAuthFilter jwtAutFilter) {
+    public SecurityConfig(
+            JwtAuthFilter jwtAutFilter,
+            CustomAuthenticationEntryPoint customAuthenticationEntryPoint,
+            CustomAccessDeniedHandler customAccessDeniedHandler
+    ) {
         this.jwtAutFilter = jwtAutFilter;
+        this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     @Bean
@@ -35,23 +45,29 @@ public class SecurityConfig {
                     return config;
                 }))
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exception ->
+                        exception
+                            .authenticationEntryPoint(customAuthenticationEntryPoint)
+                            .accessDeniedHandler(customAccessDeniedHandler)
+                )
                 .authorizeHttpRequests(
                         authorizeRequests ->
                                 authorizeRequests
                                         .requestMatchers(
                                                 "/swagger-ui/**",
-                                                "/api-docs/**"
+                                                "/api-docs/**",
+                                                "/v3/api-docs/**"
                                         )
                                         .permitAll()
                                         .requestMatchers(
                                                 HttpMethod.POST,
-                                                "/api/v1/user/email/**",
-                                                "/api/v1/user/oauth2/**"
+                                                "/api/v1/users/email/**",
+                                                "/api/v1/users/oauth2/**"
                                         )
                                         .permitAll()
                                         .requestMatchers(
                                                 HttpMethod.GET,
-                                                "/api/v1/user/auth"
+                                                "/api/v1/users/auth"
                                         )
                                         .permitAll()
                                         .anyRequest().authenticated()

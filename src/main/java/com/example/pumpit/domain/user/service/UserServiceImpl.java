@@ -2,10 +2,12 @@ package com.example.pumpit.domain.user.service;
 
 import com.example.pumpit.domain.user.dto.request.LoginUserByEmailReqDto;
 import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
+import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
 import com.example.pumpit.domain.user.repository.UserRepository;
 import com.example.pumpit.global.entity.User;
+import com.example.pumpit.global.entity.UserOAuthAccount;
 import com.example.pumpit.global.exception.CustomException;
 import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import com.example.pumpit.global.util.JwtService;
@@ -47,15 +49,27 @@ public class UserServiceImpl implements UserService {
 
     private String createAndSetTempCode(Long userId) {
         String tempCode = "tempCode:" + UUID.randomUUID();
-        redisService.set(tempCode, userId, Duration.ofSeconds(5));
+        redisService.set(tempCode, userId, Duration.ofSeconds(10));
 
         return tempCode;
     }
 
     @Override
-    public User findUserById(Long userId) {
-        return userRepository.findById(userId)
+    public FindUserByIdResDto findUserById(Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomExceptionData.USER_NOT_FOUND));
+
+        return new FindUserByIdResDto(
+                user.getId(),
+                user.getEmail(),
+                user.getOauthAccounts() != null
+                        ? user.getOauthAccounts()
+                                .stream()
+                                .map(UserOAuthAccount::getProvider)
+                                .toList()
+                        : null,
+                user.getCreatedAt()
+        );
     }
 
     @Override

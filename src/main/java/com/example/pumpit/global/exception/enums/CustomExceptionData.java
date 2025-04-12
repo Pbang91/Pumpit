@@ -12,6 +12,7 @@ public enum CustomExceptionData {
     JWT_TOKEN_INVALID("0005", "유효하지 않은 JWT 토큰입니다", HttpStatus.UNAUTHORIZED),
     INVALID_PARAMETER("0006", "잘못된 요청입니다", HttpStatus.BAD_REQUEST),
     AUTH_CODE_NOT_FOUND("0007", "인증 코드가 존재하지 않습니다", HttpStatus.NOT_FOUND),
+    USER_FORBIDDEN("0008", "권한이 없는 사용자 입니다", HttpStatus.FORBIDDEN),
     INTERVAL_SERVER_ERROR("9999", "서버 내부 오류입니다", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;

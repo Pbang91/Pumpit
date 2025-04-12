@@ -23,34 +23,12 @@ public class CustomRequestWrapper extends HttpServletRequestWrapper {
 
     @Override
     public ServletInputStream getInputStream() {
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(this.cachedBody);
-        return new ServletInputStream() {
-            @Override
-            public int read() {
-                return byteArrayInputStream.read();
-            }
-
-            @Override
-            public boolean isFinished() {
-                return byteArrayInputStream.available() == 0;
-            }
-
-            @Override
-            public boolean isReady() {
-                return true;
-            }
-
-            @Override
-            public void setReadListener(ReadListener readListener) {
-
-            }
-        };
+        return new CachedBodyServletInputStream(cachedBody);
     }
 
     @Override
     public BufferedReader getReader() {
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(this.cachedBody);
-        return new BufferedReader(new InputStreamReader(byteArrayInputStream, StandardCharsets.UTF_8));
+        return new BufferedReader(new InputStreamReader(getInputStream()));
     }
 
     public String getCachedBodyAsString() {

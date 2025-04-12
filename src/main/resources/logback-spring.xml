@@ -27,6 +27,24 @@
         </rollingPolicy>
     </appender>
 
+    <!-- WARN 전용 파일 -->
+    <appender name="WARN_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/warn.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/warn.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <clenHistoryOnStart>true</clenHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
     <!-- ERROR 전용 파일 -->
     <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/error.log</file>
@@ -46,7 +64,7 @@
     </appender>
 
 <!--     info만 찍히는 로거-->
-    <logger name="REQUEST_RESPONSE_LOGGER" level="INFO" additivity="false">
+    <logger name="INFO_LOGGER" level="INFO" additivity="false">
         <appender-ref ref="INFO_FILE"/>
     </logger>
 
@@ -55,10 +73,13 @@
         <appender-ref ref="ERROR_FILE"/>
     </logger>
 
+<!--     warn만 찍히는 로거-->
+    <logger name="WARN_LOGGER" level="WARN" additivity="false">
+        <appender-ref ref="WARN_FILE"/>
+    </logger>
+
     <!-- 콘솔에는 전체 로그 출력 -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-<!--        <appender-ref ref="INFO_FILE"/>-->
-<!--        <appender-ref ref="ERROR_FILE"/>-->
     </root>
 </configuration>

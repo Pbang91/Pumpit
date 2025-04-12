@@ -3,8 +3,11 @@ package com.example.pumpit.global.util;
 import com.example.pumpit.global.exception.CustomException;
 import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 @Service
@@ -14,6 +17,24 @@ public class RedisService {
 
     public RedisService(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T convert(Object value, Class<T> clazz) {
+        if (clazz == Long.class && value instanceof Integer intVal) {
+            return (T) Long.valueOf(intVal);
+        }
+        if (clazz == Double.class && value instanceof Integer intVal) {
+            return (T) Double.valueOf(intVal);
+        }
+        if (clazz == Boolean.class && value instanceof Boolean boolVal) {
+            return (T) boolVal;
+        }
+        if (clazz == String.class && value instanceof String strVal) {
+            return (T) strVal;
+        }
+
+        return clazz.cast(value);
     }
 
     /**
@@ -39,7 +60,7 @@ public class RedisService {
         if (value == null) return null;
 
         try {
-            return clazz.cast(value);
+            return convert(value, clazz);
         } catch (ClassCastException e) {
             throw new CustomException(
                     CustomExceptionData.INTERVAL_SERVER_ERROR,

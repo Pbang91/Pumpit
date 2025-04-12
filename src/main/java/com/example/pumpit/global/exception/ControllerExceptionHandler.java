@@ -25,13 +25,12 @@ import java.util.List;
 
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger("ERROR_LOGGER");
     private final ObjectMapper objectMapper;
 
-    public GlobalExceptionHandler(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper.copy();
-        this.objectMapper.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), false);
+    public ControllerExceptionHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @ExceptionHandler(CustomException.class)
@@ -108,6 +107,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private void logError(WebRequest request, Exception ex, String message) {
         try {
+            ObjectMapper customObjectMapper = objectMapper.copy();
+            customObjectMapper.configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), false);
             String uri = request.getDescription(false).replace("uri=", "");
             ErrorLog errorLog = new ErrorLog(
                     LogContext.getTraceId(),
@@ -118,7 +119,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     LogContext.getUserId()
             );
 
-            logger.error(objectMapper.writeValueAsString(errorLog));
+            logger.error(customObjectMapper.writeValueAsString(errorLog));
         } catch (Exception e) {
             logger.error("error 로그 실패. 사유: ", e);
         }
