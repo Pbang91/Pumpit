@@ -17,7 +17,11 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -62,12 +66,13 @@ public class UserServiceImpl implements UserService {
         return new FindUserByIdResDto(
                 user.getId(),
                 user.getEmail(),
-                user.getOauthAccounts() != null
-                        ? user.getOauthAccounts()
+                user.getNickName(),
+                Optional.ofNullable(user.getOauthAccounts())
+                        .map(accounts -> accounts
                                 .stream()
                                 .map(UserOAuthAccount::getProvider)
-                                .toList()
-                        : null,
+                                .toList())
+                        .orElse(List.of()),
                 user.getCreatedAt()
         );
     }

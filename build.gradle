@@ -27,8 +27,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis") // Redis
     implementation("org.apache.commons:commons-pool2") // Redis connection pool
 
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation platform("org.junit:junit-bom:5.10.0") // JUnit BOM
+    testImplementation("org.junit.jupiter:junit-jupiter") // JUnit 5
+    testImplementation("org.mockito:mockito-core:5.11.0") // Mockito
+    testImplementation("org.mockito:mockito-junit-jupiter:5.11.0") // Mockito JUnit 5
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine") // JUnit 5 Engine
+    testImplementation("org.springframework.boot:spring-boot-starter-test") // Spring Boot Test
 }
 
 
