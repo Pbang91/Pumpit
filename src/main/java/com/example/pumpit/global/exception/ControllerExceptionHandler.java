@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -96,6 +97,25 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                 CustomExceptionData.INVALID_PARAMETER.getCode(),
                 CustomExceptionData.INVALID_PARAMETER.getDescription(),
                 details + ex.getMessage()
+        );
+
+        return new ResponseEntity<>(apiExceptionResDto, CustomExceptionData.INVALID_PARAMETER.getStatus());
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request
+    ) {
+        String details = "필수 파라미터가 누락되었습니다. " + ex.getParameterName() + " 파라미터를 확인해주세요.";
+        logError(request, ex, details);
+
+        ApiExceptionResDto apiExceptionResDto = new ApiExceptionResDto(
+                CustomExceptionData.INVALID_PARAMETER.getCode(),
+                CustomExceptionData.INVALID_PARAMETER.getDescription(),
+                details
         );
 
         return new ResponseEntity<>(apiExceptionResDto, CustomExceptionData.INVALID_PARAMETER.getStatus());

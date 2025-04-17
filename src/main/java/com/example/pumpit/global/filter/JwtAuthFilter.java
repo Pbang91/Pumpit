@@ -1,8 +1,6 @@
 package com.example.pumpit.global.filter;
 
-import com.example.pumpit.global.exception.CustomException;
 import com.example.pumpit.global.exception.JwtAuthenticationException;
-import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import com.example.pumpit.global.log.LogContext;
 import com.example.pumpit.global.util.CustomUserDetails;
 import com.example.pumpit.global.util.JwtService;
@@ -10,9 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;

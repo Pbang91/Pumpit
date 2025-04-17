@@ -6,15 +6,16 @@ spring:
     active: local  # 기본 실행 프로파일 (local, dev, prod)
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-      jdbc:
-        time-zone: UTC
+
     properties:
+      jdbc:
+        time_zone: UTC
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         show_sql: true
 

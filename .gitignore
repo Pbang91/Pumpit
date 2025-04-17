@@ -43,3 +43,6 @@ bin/
 
 ### Logs ###
 logs/
+
+### property files ###
+**/src/main/**/application-.*
