@@ -2,6 +2,7 @@ package com.example.pumpit.domain.user.service;
 
 import com.example.pumpit.domain.user.dto.request.LoginUserByEmailReqDto;
 import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
+import com.example.pumpit.domain.user.dto.request.UpdateUserReqDto;
 import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
@@ -13,12 +14,10 @@ import com.example.pumpit.global.exception.enums.CustomExceptionData;
 import com.example.pumpit.global.util.JwtService;
 import com.example.pumpit.global.util.PasswordEncoder;
 import com.example.pumpit.global.util.RedisService;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -57,6 +56,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public FindUserByIdResDto findUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(CustomExceptionData.USER_NOT_FOUND));
@@ -65,12 +65,7 @@ public class UserServiceImpl implements UserService {
                 user.getId(),
                 user.getEmail(),
                 user.getNickName(),
-                Optional.ofNullable(user.getOauthAccounts())
-                        .map(accounts -> accounts
-                                .stream()
-                                .map(UserOAuthAccount::getProvider)
-                                .toList())
-                        .orElse(List.of()),
+                user.getOauthAccounts().stream().map(UserOAuthAccount::getProvider).toList(),
                 user.getCreatedAt()
         );
     }
@@ -116,7 +111,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public LoginUserResDto getToken(String code) {
+    public LoginUserResDto getToken(String code, boolean remember) {
         Long userId = redisService.get(code, Long.class);
 
         if (userId == null) {
@@ -124,10 +119,22 @@ public class UserServiceImpl implements UserService {
         }
 
         String accessToken = jwtService.generateAccessToken(userId);
-        String refreshToken = jwtService.generateRefreshToken(userId);
+        String refreshToken = jwtService.generateRefreshToken(userId, remember);
 
         redisService.set(refreshToken, true, Duration.ofDays(7));
 
         return new LoginUserResDto(accessToken, refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void updateUser(Long userId, UpdateUserReqDto dto) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(CustomExceptionData.USER_NOT_FOUND));
+
+        if (dto.nickName() != null) {
+            user.setNickName(dto.nickName());
+        }
+
+        userRepository.save(user);
     }
 }

@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
@@ -33,7 +32,7 @@ public class JwtService {
         this.userDetailsService = userDetailsService;
     }
 
-    private String createJwt(Map<String, Object> claims, String expirationTime) {
+    private String createJwt(Map<String, Object> claims, String expirationTime, boolean remember) {
         long expiration;
         long now = System.currentTimeMillis();
 
@@ -42,6 +41,8 @@ public class JwtService {
         } catch (NumberFormatException e) {
             expiration = 1000L * 60 * 60; // Default to 1 hours if parsing fails
         }
+
+        expiration = remember ? expiration * 2 : expiration;
 
         return Jwts.builder()
                 .claims(claims)
@@ -64,7 +65,7 @@ public class JwtService {
 
         claims.put("userId", userId);
 
-        return createJwt(claims, ACCESS_TOKEN_EXPIRATION);
+        return createJwt(claims, ACCESS_TOKEN_EXPIRATION, false);
     }
 
     public String generateAccessToken(Long userId, String role) {
@@ -73,15 +74,15 @@ public class JwtService {
         claims.put("userId", userId);
         claims.put("role", role);
 
-        return createJwt(claims, ACCESS_TOKEN_EXPIRATION);
+        return createJwt(claims, ACCESS_TOKEN_EXPIRATION, false);
     }
 
-    public String generateRefreshToken(Long userId) {
+    public String generateRefreshToken(Long userId, boolean remember) {
         Map<String, Object> claims = new HashMap<>();
 
         claims.put("userId", userId);
 
-        return createJwt(claims, REFRESH_TOKEN_EXPIRATION);
+        return createJwt(claims, REFRESH_TOKEN_EXPIRATION, remember);
     }
 
     public Authentication getAuthentication(String token) {

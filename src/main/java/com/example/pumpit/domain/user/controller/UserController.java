@@ -3,6 +3,7 @@ package com.example.pumpit.domain.user.controller;
 import com.example.pumpit.domain.user.dto.request.LoginUserByEmailReqDto;
 import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
 import com.example.pumpit.domain.user.dto.request.RegisterUserByOAuthReqDto;
+import com.example.pumpit.domain.user.dto.request.UpdateUserReqDto;
 import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
@@ -93,10 +94,13 @@ public class UserController {
     )
     public ResponseEntity<ApiSuccessResDto<LoginUserResDto>> getAccessToken(
             @Parameter(name = "c", description = "temp code", required = true)
-            @RequestParam(name = "c") String code
+            @RequestParam(name = "c") String code,
+
+            @Parameter(name = "r", description = "remember. default value false")
+            @RequestParam(name = "r", defaultValue = "false") boolean remember
     ) {
         return ApiSuccessResUtil.success(
-                userService.getToken(code),
+                userService.getToken(code,remember),
                 HttpStatus.OK
         );
     }
@@ -114,5 +118,18 @@ public class UserController {
     ) {
         Long userId = userDetails.getId();
         return ApiSuccessResUtil.success(userService.findUserById(userId), HttpStatus.OK);
+    }
+
+    @PatchMapping("/me")
+    @Operation(summary = "본인 정보 수정", description = "본인 정보를 수정합니다")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> updateUser(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody UpdateUserReqDto dto
+    ) {
+        Long userId = userDetails.getId();
+        userService.updateUser(userId, dto);
+
+        return ResponseEntity.noContent().build();
     }
 }

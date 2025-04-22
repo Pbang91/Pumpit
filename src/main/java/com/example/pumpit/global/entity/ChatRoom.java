@@ -24,6 +24,7 @@ public class ChatRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Builder.Default
     @ColumnDefault("false")
     private boolean isGroup = false;
 

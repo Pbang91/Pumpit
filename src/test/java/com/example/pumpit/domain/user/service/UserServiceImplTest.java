@@ -2,6 +2,7 @@ package com.example.pumpit.domain.user.service;
 
 import com.example.pumpit.domain.user.dto.request.LoginUserByEmailReqDto;
 import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
+import com.example.pumpit.domain.user.dto.request.UpdateUserReqDto;
 import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
@@ -143,9 +144,9 @@ public class UserServiceImplTest {
 
         given(redisService.get(tempCode, Long.class)).willReturn(userId);
         given(jwtService.generateAccessToken(userId)).willReturn("accessToken");
-        given(jwtService.generateRefreshToken(userId)).willReturn("refreshToken");
+        given(jwtService.generateRefreshToken(userId, false)).willReturn("refreshToken");
 
-        LoginUserResDto result = userService.getToken(tempCode);
+        LoginUserResDto result = userService.getToken(tempCode, false);
 
         assertThat(result.accessToken()).isEqualTo("accessToken");
         assertThat(result.refreshToken()).isEqualTo("refreshToken");
@@ -158,7 +159,7 @@ public class UserServiceImplTest {
 
         given(redisService.get(tempCode, Long.class)).willReturn(null);
 
-        assertThatThrownBy(() -> userService.getToken(tempCode))
+        assertThatThrownBy(() -> userService.getToken(tempCode, false))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("인증 코드가 존재하지 않습니다");
     }
@@ -190,6 +191,42 @@ public class UserServiceImplTest {
         given(userRepository.findById(userId)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.findUserById(userId))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("사용자를 찾을 수 없습니다");
+    }
+
+    @DisplayName("내 정보 업데이트 성공")
+    @Test
+    void updateUser_Success() {
+        Long userId = 52L;
+
+        User user = User
+                .builder()
+                .email("update@test.com")
+                .password("ddd")
+                .nickName("find")
+                .build();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+        UpdateUserReqDto dto = new UpdateUserReqDto("changeName");
+
+        userService.updateUser(userId, dto);
+
+        FindUserByIdResDto res = userService.findUserById(userId);
+
+        assertThat(res.nickName()).isEqualTo(dto.nickName());
+    }
+
+    @DisplayName("내 정보 업데이트 실패 - 유저 없음")
+    @Test
+    void updateUser_Fail_userNotFound() {
+        Long userId = 52L;
+        given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+        UpdateUserReqDto dto = new UpdateUserReqDto("failName");
+
+        assertThatThrownBy(() -> userService.updateUser(userId, dto))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("사용자를 찾을 수 없습니다");
     }
