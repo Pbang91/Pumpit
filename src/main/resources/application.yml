@@ -42,3 +42,7 @@ springdoc:
   paths-to-match: /api/**
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+
+security:
+  aes:
+    key: TOP_!@22_BIG_SECRET_DD_KEY_^^&_OK

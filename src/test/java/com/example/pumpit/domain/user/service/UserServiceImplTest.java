@@ -4,13 +4,15 @@ import com.example.pumpit.domain.user.dto.request.LoginUserByEmailReqDto;
 import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
 import com.example.pumpit.domain.user.dto.request.UpdateUserReqDto;
 import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
+import com.example.pumpit.domain.user.dto.response.FindUserSignupInfoResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
 import com.example.pumpit.domain.user.repository.UserRepository;
 import com.example.pumpit.global.entity.User;
 import com.example.pumpit.global.exception.CustomException;
+import com.example.pumpit.global.util.AESCBCUtil;
 import com.example.pumpit.global.util.JwtService;
-import com.example.pumpit.global.util.PasswordEncoder;
+import com.example.pumpit.global.util.BCryptService;
 import com.example.pumpit.global.util.RedisService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,12 +36,15 @@ public class UserServiceImplTest {
     @Mock private UserRepository userRepository;
     @Mock private JwtService jwtService;
     @Mock private RedisService redisService;
+    private AESCBCUtil aescbcUtil;
 
     private UserServiceImpl userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserServiceImpl(userRepository, jwtService, redisService);
+        String testKey = "abcdefghoabcdefghoabcdefghoaq442";
+        aescbcUtil = new AESCBCUtil(testKey);
+        userService = new UserServiceImpl(userRepository, jwtService, redisService, aescbcUtil);
     }
 
     @DisplayName("이메일 회원가입 성공")
@@ -47,10 +52,14 @@ public class UserServiceImplTest {
     void registerUserByEmail_Success() {
         RegisterUserByEmailReqDto dto = new RegisterUserByEmailReqDto(
                 "test@mail.com",
-                "password123!"
+                "password123!",
+                "얍얍얍",
+                "01012345678"
         );
 
-        given(userRepository.existsByEmail(dto.email())).willReturn(false);
+        String encEmail = aescbcUtil.encrypt(dto.email());
+
+        given(userRepository.existsByEmail(encEmail)).willReturn(false);
         given(userRepository.save(any())).willAnswer(inv -> {
             User user = inv.getArgument(0);
 
@@ -73,12 +82,15 @@ public class UserServiceImplTest {
     @Test
     void registerUserByEmail_Fail_userAlreadyExist() {
         String email = "test@exist.com";
+        String encEmail = aescbcUtil.encrypt(email);
         RegisterUserByEmailReqDto dto = new RegisterUserByEmailReqDto(
                 email,
-                "password123!"
+                "password123!",
+                "얍얍얍",
+                "01012345678"
         );
 
-        given(userRepository.existsByEmail(dto.email())).willReturn(true);
+        given(userRepository.existsByEmail(encEmail)).willReturn(true);
 
         assertThatThrownBy(() -> userService.registerUserByEmail(dto))
                 .isInstanceOf(CustomException.class)
@@ -90,12 +102,14 @@ public class UserServiceImplTest {
     void loginUserByEmail_Success() {
         String email = "login@test.com";
         String password = "password123!";
-        String encodedPassword = PasswordEncoder.encode(password);
-        User user = User.builder().email(email).password(encodedPassword).nickName("login").build();
+        String encodedPassword = BCryptService.encode(password);
+        String encEmail = aescbcUtil.encrypt(email);
+
+        User user = User.builder().email(encEmail).password(encodedPassword).nickName("login").build();
 
         LoginUserByEmailReqDto dto = new LoginUserByEmailReqDto(email, password);
 
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+        given(userRepository.findByEmail(encEmail)).willReturn(Optional.of(user));
         willDoNothing().given(redisService).set(anyString(), any(), any());
 
         LoginUserRequestTokenResDto result = userService.loginUserByEmail(dto);
@@ -107,7 +121,8 @@ public class UserServiceImplTest {
     @Test
     void loginUserByEmail_Fail_userNotFound() {
         String email = "login@test.com";
-        given(userRepository.findByEmail(email)).willReturn(Optional.empty());
+        String encEmail = aescbcUtil.encrypt(email);
+        given(userRepository.findByEmail(encEmail)).willReturn(Optional.empty());
 
         LoginUserByEmailReqDto dto = new LoginUserByEmailReqDto(email, "password123!");
 
@@ -120,16 +135,18 @@ public class UserServiceImplTest {
     @Test
     void loginUserByEmail_Fail_wrongPassword() {
         String email = "login@test.com";
+        String encEmail = aescbcUtil.encrypt(email);
+
         User user = User
                 .builder()
-                .email(email)
-                .password(PasswordEncoder.encode("failTest1234"))
+                .email(encEmail)
+                .password(BCryptService.encode("failTest1234"))
                 .nickName("login")
                 .build();
 
         LoginUserByEmailReqDto dto = new LoginUserByEmailReqDto(email, "wrongPassword");
 
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+        given(userRepository.findByEmail(encEmail)).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.loginUserByEmail(dto))
                 .isInstanceOf(CustomException.class)
@@ -142,6 +159,7 @@ public class UserServiceImplTest {
         String tempCode = "tempCode:%s".formatted(UUID.randomUUID().toString());
         Long userId = 52L;
 
+        given(userRepository.findById(userId)).willReturn(Optional.of(User.builder().id(userId).build()));
         given(redisService.get(tempCode, Long.class)).willReturn(userId);
         given(jwtService.generateAccessToken(userId)).willReturn("accessToken");
         given(jwtService.generateRefreshToken(userId, false)).willReturn("refreshToken");
@@ -168,18 +186,25 @@ public class UserServiceImplTest {
     @Test
     void findUserById_Success() {
         Long userId = 52L;
+        String email = "find@test.com";
+        String phone = "01012345678";
+        String encEmail = aescbcUtil.encrypt(email);
+        String encPhone = aescbcUtil.encrypt(phone);
+
         User user = User
                 .builder()
-                .email("find@test.com")
+                .id(userId)
+                .email(encEmail)
                 .password("ddd")
                 .nickName("find")
+                .phone(encPhone)
                 .build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
         FindUserByIdResDto result = userService.findUserById(userId);
 
-        assertThat(result.email()).isEqualTo(user.getEmail());
+        assertThat(result.email()).isEqualTo(aescbcUtil.decrypt(user.getEmail()));
         assertThat(result.nickName()).isEqualTo(user.getNickName());
     }
 
@@ -199,17 +224,20 @@ public class UserServiceImplTest {
     @Test
     void updateUser_Success() {
         Long userId = 52L;
+        String email = "update@test.com";
+        String encEmail = aescbcUtil.encrypt(email);
 
         User user = User
                 .builder()
-                .email("update@test.com")
+                .id(userId)
+                .email(encEmail)
                 .password("ddd")
                 .nickName("find")
                 .build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
-        UpdateUserReqDto dto = new UpdateUserReqDto("changeName");
+        UpdateUserReqDto dto = new UpdateUserReqDto("changeName", null);
 
         userService.updateUser(userId, dto);
 
@@ -224,10 +252,48 @@ public class UserServiceImplTest {
         Long userId = 52L;
         given(userRepository.findById(userId)).willReturn(Optional.empty());
 
-        UpdateUserReqDto dto = new UpdateUserReqDto("failName");
+        UpdateUserReqDto dto = new UpdateUserReqDto("failName", null);
 
         assertThatThrownBy(() -> userService.updateUser(userId, dto))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("사용자를 찾을 수 없습니다");
+    }
+
+    @DisplayName("가입 정보 보기 성공")
+    @Test
+    void findUserSignupInfo_Success() {
+        Long userId = 52L;
+        String email = "find@test.com";
+        String encEmail = aescbcUtil.encrypt(email);
+        String recoveryCode = BCryptService.generateRecoveryCode();
+        String encCode = aescbcUtil.encrypt(recoveryCode);
+
+        User user = User
+                .builder()
+                .id(userId)
+                .email(encEmail)
+                .password("ddd")
+                .nickName("find")
+                .recoveryCode(encCode)
+                .build();
+
+        given(userRepository.findByRecoveryCode(encCode)).willReturn(Optional.of(user));
+
+        FindUserSignupInfoResDto resDto = userService.findUserSignupInfo(recoveryCode);
+        System.out.println(resDto);
+        assertThat(resDto.email()).isEqualTo("fi**@test.com");
+    }
+
+    @DisplayName("가입 정보 보기 실패 - 복구코드 오류")
+    @Test
+    void findUserSignupInfo_Fail_InvalidCode() {
+        String recoveryCode = BCryptService.generateRecoveryCode();
+        String encCode = aescbcUtil.encrypt(recoveryCode);
+
+        given(userRepository.findByRecoveryCode(encCode)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.findUserSignupInfo(recoveryCode))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("잘못된 복구코드 입니다");
     }
 }

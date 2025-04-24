@@ -25,10 +25,19 @@ public class User {
     @Column(nullable = false)
     private String nickName;
 
+    @Setter
     @Column(unique = true)
-    private String email;
+    private String email; // 암호화된 이메일
 
-    private String password;
+    @Setter
+    private String password; // 암호화된 비밀번호
+
+    @Setter
+    private String phone; // 암호화된 번호 - PW 찾기 시 활용
+
+    @Setter
+    @Column(unique = true)
+    private String recoveryCode; // 암호화된 복구코드 - ID,PW 찾기 시 활용
 
     @CreatedDate
     private LocalDateTime createdAt;

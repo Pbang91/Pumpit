@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0
+      author: GGPARK
+      preConditions:
+        - onFail: MARK_RAN
+          not:
+            columnExists:
+              tableName: users
+              columnName: recovery_code
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: recovery_code
+                  type: TEXT
+                  constraints:
+                    unique: true
+              - column:
+                  name: phone
+                  type: TEXT
+        - modifyDataType:
+            tableName: users
+            columnName: email
+            newDataType: TEXT

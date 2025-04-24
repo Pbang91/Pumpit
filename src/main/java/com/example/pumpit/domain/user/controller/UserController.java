@@ -5,6 +5,7 @@ import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
 import com.example.pumpit.domain.user.dto.request.RegisterUserByOAuthReqDto;
 import com.example.pumpit.domain.user.dto.request.UpdateUserReqDto;
 import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
+import com.example.pumpit.domain.user.dto.response.FindUserSignupInfoResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
 import com.example.pumpit.domain.user.service.UserService;
@@ -123,6 +124,11 @@ public class UserController {
     @PatchMapping("/me")
     @Operation(summary = "본인 정보 수정", description = "본인 정보를 수정합니다")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ApiExceptionResponse(
+            value = {
+                    @ApiExceptionData(errorCode = CustomExceptionData.USER_NOT_FOUND)
+            }
+    )
     public ResponseEntity<Void> updateUser(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody UpdateUserReqDto dto
@@ -132,4 +138,25 @@ public class UserController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/signup-info")
+    @Operation(
+            summary = "가입한 정보 조회 API",
+            description = "가입한 정보(빙법)를 조회합니다\n\n" +
+                    "1. 이메일 정보가 있을 시 일부 스키마된 email을 전달합니다\n" +
+                    "2. 소셜 채널 정보가 있을 시 소셜 채널 타입을 전달합니다"
+    )
+    @ResponseStatus(HttpStatus.OK)
+    @ApiExceptionResponse(
+            value = {
+                    @ApiExceptionData(errorCode = CustomExceptionData.INVALID_PARAMETER, details = "잘못된 복구코드 입니다")
+            }
+    )
+    public ResponseEntity<ApiSuccessResDto<FindUserSignupInfoResDto>> findUserSignupInfo(
+            @Parameter(name = "rc", description = "recoveryCode",required = true)
+            @RequestParam(name = "rc") String recoveryCode
+    ) {
+        return ApiSuccessResUtil.success(userService.findUserSignupInfo(recoveryCode), HttpStatus.OK);
+    }
+
 }

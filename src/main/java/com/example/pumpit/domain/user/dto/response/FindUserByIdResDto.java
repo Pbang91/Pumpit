@@ -14,16 +14,23 @@ public record FindUserByIdResDto (
         @Schema(
                 description = "user email",
                 example = "test@mail.com",
-                requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+                requiredMode = Schema.RequiredMode.REQUIRED,
                 nullable = true
         )
         String email,
 
         @Schema(
+                description = "user phone",
+                example = "01012345678",
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                nullable = true
+        )
+        String phone,
+
+        @Schema(
                 description = "user nickname",
                 example = "nickname",
-                requiredMode = Schema.RequiredMode.NOT_REQUIRED,
-                nullable = true
+                requiredMode = Schema.RequiredMode.REQUIRED
         )
         String nickName,
 
@@ -31,7 +38,8 @@ public record FindUserByIdResDto (
                 schema = @Schema(
                         description = "사용자가 가입한 OAuth 서비스",
                         example = "GOOGLE",
-                        requiredMode = Schema.RequiredMode.NOT_REQUIRED
+                        requiredMode = Schema.RequiredMode.REQUIRED,
+                        nullable = true
                 )
         )
         List<UserOAuthProvider> oauthProviders,
