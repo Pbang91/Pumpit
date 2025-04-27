@@ -7,6 +7,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Builder
@@ -45,33 +46,43 @@ public class User {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<UserOAuthAccount> oauthAccounts;
+    private Set<UserOAuthAccount> oauthAccounts = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<WorkoutRecord> workoutRecords;
+    private Set<WorkoutRecord> workoutRecords = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<Post> posts;
+    private Set<Post> posts = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<Comment> comments;
+    private Set<Comment> comments = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<Like> likes;
+    private Set<Like> likes = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "follower", fetch = FetchType.LAZY)
-    private Set<UserFollower> followers;
+    private Set<UserFollower> followers = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "following", fetch = FetchType.LAZY)
-    private Set<UserFollower> following;
+    private Set<UserFollower> following = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<ChatRoomMember> chatRoomMembers;
+    private Set<ChatRoomMember> chatRoomMembers = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
-    private Set<ChatMessage> chatMessageSenders;
+    private Set<ChatMessage> chatMessageSenders = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<ChatMessageRead> chatMessageReads;
+    private Set<ChatMessageRead> chatMessageReads = new HashSet<>();
 }

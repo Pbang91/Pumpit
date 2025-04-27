@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -194,9 +193,7 @@ public class UserServiceImpl implements UserService {
 
         String bcryptEmail = user.getEmail() != null ? aesCbcUtil.decrypt(user.getEmail()) : null;
         String maskedEmail = bcryptEmail != null ? generateMaskedEmail(bcryptEmail) : null;
-        List<UserOAuthProvider> oauthTypeList = user.getOauthAccounts() == null
-                ? Collections.emptyList()
-                : user.getOauthAccounts().stream().map(UserOAuthAccount::getProvider).toList();
+        List<UserOAuthProvider> oauthTypeList = user.getOauthAccounts().stream().map(UserOAuthAccount::getProvider).toList();
 
         String newRecoveryCode = BCryptService.generateRecoveryCode();
         String encryptedCode = aesCbcUtil.encrypt(newRecoveryCode);
