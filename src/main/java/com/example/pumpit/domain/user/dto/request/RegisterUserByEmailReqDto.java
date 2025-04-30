@@ -33,7 +33,7 @@ public record RegisterUserByEmailReqDto(
         String nickName,
 
         @Schema(
-                description = "무선(모바일) 번호입니다. PW 찾기 시 활용됩니다.",
+                description = "무선(모바일) 번호입니다. 정보제공을 위해 활용됩니다",
                 example = "01012345678",
                 requiredMode = Schema.RequiredMode.NOT_REQUIRED,
                 nullable = true

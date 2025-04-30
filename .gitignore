@@ -45,4 +45,4 @@ bin/
 logs/
 
 ### property files ###
-src/main/resources/application-*.yml
+src/main/resources/application*.yml

@@ -67,7 +67,13 @@ public class SecurityConfig {
                                         .permitAll()
                                         .requestMatchers(
                                                 HttpMethod.GET,
-                                                "/api/v1/users/auth"
+                                                "/api/v1/users/auth",
+                                                "/api/v1/users/signup-info/**"
+                                        )
+                                        .permitAll()
+                                        .requestMatchers(
+                                                HttpMethod.PUT,
+                                                "/api/v1/users/me/password"
                                         )
                                         .permitAll()
                                         .anyRequest().authenticated()

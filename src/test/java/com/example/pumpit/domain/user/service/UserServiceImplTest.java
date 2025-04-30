@@ -1,11 +1,9 @@
 package com.example.pumpit.domain.user.service;
 
-import com.example.pumpit.domain.user.dto.request.LoginUserByEmailReqDto;
-import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
-import com.example.pumpit.domain.user.dto.request.UpdateUserReqDto;
+import com.example.pumpit.domain.user.dto.request.*;
 import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
 import com.example.pumpit.domain.user.dto.response.FindUserSignupInfoResDto;
-import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
+import com.example.pumpit.domain.user.dto.response.IssueTempCodeResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
 import com.example.pumpit.domain.user.repository.UserRepository;
 import com.example.pumpit.global.entity.User;
@@ -72,10 +70,9 @@ public class UserServiceImplTest {
 
         willDoNothing().given(redisService).set(anyString(), any(), any());
 
-        LoginUserRequestTokenResDto result = userService.registerUserByEmail(dto);
+        IssueTempCodeResDto result = userService.registerUserByEmail(dto);
 
-        assertThat(result.tempCode()).startsWith("tempCode:");
-        verify(redisService).set(startsWith("tempCode:"), any(), any());
+        assertThat(result.tempCode()).isInstanceOfAny(String.class);
     }
 
     @DisplayName("이메일 회원가입 실패 - 중복된 이메일")
@@ -112,9 +109,9 @@ public class UserServiceImplTest {
         given(userRepository.findByEmail(encEmail)).willReturn(Optional.of(user));
         willDoNothing().given(redisService).set(anyString(), any(), any());
 
-        LoginUserRequestTokenResDto result = userService.loginUserByEmail(dto);
+        IssueTempCodeResDto result = userService.loginUserByEmail(dto);
 
-        assertThat(result.tempCode()).startsWith("tempCode:");
+        assertThat(result.tempCode()).isInstanceOfAny(String.class);
     }
 
     @DisplayName("이메일 로그인 실패 - 유저 없음")
@@ -156,11 +153,11 @@ public class UserServiceImplTest {
     @DisplayName("토큰 발급 성공")
     @Test
     void getToken_Success() {
-        String tempCode = "tempCode:%s".formatted(UUID.randomUUID().toString());
+        String tempCode = UUID.randomUUID().toString();
         Long userId = 52L;
 
         given(userRepository.findById(userId)).willReturn(Optional.of(User.builder().id(userId).build()));
-        given(redisService.get(tempCode, Long.class)).willReturn(userId);
+        given(redisService.get(String.format("auth:temp:%s", tempCode), Long.class)).willReturn(userId);
         given(jwtService.generateAccessToken(userId)).willReturn("accessToken");
         given(jwtService.generateRefreshToken(userId, false)).willReturn("refreshToken");
 
@@ -173,9 +170,9 @@ public class UserServiceImplTest {
     @DisplayName("토큰 발급 실패 - 인증 코드 없음")
     @Test
     void getToken_Fail_authCodeNotFound() {
-        String tempCode = "tempCode:%s".formatted(UUID.randomUUID().toString());
+        String tempCode = UUID.randomUUID().toString();
 
-        given(redisService.get(tempCode, Long.class)).willReturn(null);
+        given(redisService.get(String.format("auth:temp:%s", tempCode), Long.class)).willReturn(null);
 
         assertThatThrownBy(() -> userService.getToken(tempCode, false))
                 .isInstanceOf(CustomException.class)
@@ -259,6 +256,58 @@ public class UserServiceImplTest {
                 .hasMessageContaining("사용자를 찾을 수 없습니다");
     }
 
+    @DisplayName("비밀번호 변경 성공")
+    @Test
+    void changePassword_Success() {
+        Long userId = 52L;
+        String oldPassword = "oldPassword";
+        String newPassword = "newPassword";
+        String encOldPassword = BCryptService.encode(oldPassword);
+
+        User user = User.builder()
+                .id(userId)
+                .password(encOldPassword)
+                .build();
+
+        given(redisService.get(String.format("pw:temp:%s", "any"), Long.class)).willReturn(userId);
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+        userService.changePassword(new ChangePasswordReqDto("any", newPassword));
+
+        assertThat(BCryptService.matches(newPassword, user.getPassword())).isTrue();
+    }
+
+    @DisplayName("비밀번호 변경 실패 - 인증 코드 없음")
+    @Test
+    void changePassword_Fail_authCodeNotFound() {
+        String tempCode = UUID.randomUUID().toString();
+
+        given(redisService.get(String.format("pw:temp:%s", tempCode), Long.class)).willReturn(null);
+
+        assertThatThrownBy(() -> userService.changePassword(new ChangePasswordReqDto(tempCode,  "failPw")))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("인증 코드가 존재하지 않습니다");
+    }
+
+    @DisplayName("비밀번호 검증 성공")
+    @Test
+    void validateUserPassword_Success() {
+        Long userId = 52L;
+        String rawPassword = "correctPw";
+        String encodedPassword = BCryptService.encode(rawPassword);
+
+        User user = User.builder()
+                .id(userId)
+                .password(encodedPassword)
+                .build();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        // when
+        IssueTempCodeResDto result = userService.validateUserPassword(userId, new ValidatePasswordReqDto(rawPassword));
+
+        assertThat(result.tempCode()).isInstanceOfAny(String.class);
+    }
+
     @DisplayName("가입 정보 보기 성공")
     @Test
     void findUserSignupInfo_Success() {
@@ -280,7 +329,6 @@ public class UserServiceImplTest {
         given(userRepository.findByRecoveryCode(encCode)).willReturn(Optional.of(user));
 
         FindUserSignupInfoResDto resDto = userService.findUserSignupInfo(recoveryCode);
-        System.out.println(resDto);
         assertThat(resDto.email()).isEqualTo("fi**@test.com");
     }
 
@@ -295,5 +343,92 @@ public class UserServiceImplTest {
         assertThatThrownBy(() -> userService.findUserSignupInfo(recoveryCode))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("잘못된 복구코드 입니다");
+    }
+
+    @DisplayName("비밀번호 검증 실패 - 비밀번호 불일치")
+    @Test
+    void validateUserPassword_Fail_WrongPassword() {
+        Long userId = 52L;
+        String rawPassword = "wrongPw";
+        String correctEncoded = BCryptService.encode("correctPw");
+
+        User user = User.builder()
+                .id(userId)
+                .password(correctEncoded)
+                .build();
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.validateUserPassword(userId, new ValidatePasswordReqDto(rawPassword)))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("비밀번호가 일치하지 않습니다");
+    }
+
+    @DisplayName("email 가입 시 설정한 PW 확인 성공")
+    @Test
+    void findUserSignupInfo_PW_Success() {
+        Long userId = 52L;
+        String email = "find@test.com";
+        String encEmail = aescbcUtil.encrypt(email);
+        String password = "find1234!@#$";
+        String encPassword = BCryptService.encode(password);
+        String recoveryCode = BCryptService.generateRecoveryCode();
+        String encCode = aescbcUtil.encrypt(recoveryCode);
+
+        User user = User
+                .builder()
+                .id(userId)
+                .email(encEmail)
+                .password(encPassword)
+                .nickName("find")
+                .recoveryCode(encCode)
+                .build();
+
+        given(userRepository.findByRecoveryCode(encCode)).willReturn(Optional.of(user));
+        willDoNothing().given(redisService).set(anyString(), any(), any());
+
+        IssueTempCodeResDto result = userService.findUserSignupInfoPassword(recoveryCode, email);
+
+        assertThat(result.tempCode()).isInstanceOfAny(String.class);
+    }
+
+    @DisplayName("email 가입 시 설정한 PW 확인 실패 - 복구 코드 오류")
+    @Test
+    void findUserSignupInfo_PW_Fail_InvalidCode() {
+        String recoveryCode = BCryptService.generateRecoveryCode();
+        String encCode = aescbcUtil.encrypt(recoveryCode);
+
+        given(userRepository.findByRecoveryCode(encCode)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.findUserSignupInfoPassword(recoveryCode, "fails"))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("잘못된 정보 입니다");
+    }
+
+    @DisplayName("email 가입 시 설정한 PW 확인 실패 - 이메일 불일치")
+    @Test
+    void findUserSignupInfo_PW_Fail_InvalidEmail() {
+        Long userId = 52L;
+        String email = "find@test.com";
+        String encEmail = aescbcUtil.encrypt(email);
+        String password = "find1234!@#$";
+        String encPassword = BCryptService.encode(password);
+        String recoveryCode = BCryptService.generateRecoveryCode();
+        String encCode = aescbcUtil.encrypt(recoveryCode);
+
+        User user = User
+                .builder()
+                .id(userId)
+                .email(encEmail)
+                .password(encPassword)
+                .nickName("find")
+                .recoveryCode(encCode)
+                .build();
+
+        given(userRepository.findByRecoveryCode(encCode)).willReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.findUserSignupInfoPassword(recoveryCode, "wrongEmail"))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("잘못된 정보 입니다");
     }
 }

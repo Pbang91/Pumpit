@@ -1,12 +1,9 @@
 package com.example.pumpit.domain.user.controller;
 
-import com.example.pumpit.domain.user.dto.request.LoginUserByEmailReqDto;
-import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
-import com.example.pumpit.domain.user.dto.request.RegisterUserByOAuthReqDto;
-import com.example.pumpit.domain.user.dto.request.UpdateUserReqDto;
+import com.example.pumpit.domain.user.dto.request.*;
 import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
 import com.example.pumpit.domain.user.dto.response.FindUserSignupInfoResDto;
-import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
+import com.example.pumpit.domain.user.dto.response.IssueTempCodeResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
 import com.example.pumpit.domain.user.service.UserService;
 import com.example.pumpit.global.dto.ApiSuccessResDto;
@@ -21,6 +18,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,7 +42,7 @@ public class UserController {
                     @ApiExceptionData(errorCode = CustomExceptionData.USER_DUPLICATED)
             }
     )
-    public ResponseEntity<ApiSuccessResDto<LoginUserRequestTokenResDto>> registerUserByEmail(
+    public ResponseEntity<ApiSuccessResDto<IssueTempCodeResDto>> registerUserByEmail(
             @Valid @RequestBody RegisterUserByEmailReqDto dto
     ) {
         return ApiSuccessResUtil.success(
@@ -63,7 +61,7 @@ public class UserController {
                     @ApiExceptionData(errorCode = CustomExceptionData.USER_NOT_FOUND)
             }
     )
-    public ResponseEntity<ApiSuccessResDto<LoginUserRequestTokenResDto>> loginUser(
+    public ResponseEntity<ApiSuccessResDto<IssueTempCodeResDto>> loginUser(
             @Valid @RequestBody LoginUserByEmailReqDto dto
     ) {
         return ApiSuccessResUtil.success(
@@ -139,6 +137,30 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/me/password")
+    @SecurityRequirements
+    @Operation(summary = "비밀번호를 변경하는 API", description = "임시코드를 발급받고 진행해야 합니다")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordReqDto dto
+    ) {
+        userService.changePassword(dto);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/validation/password")
+    @Operation(summary = "비밀번호 검증 API", description = "비밀번호를 검증 후 임시 코드를 발급합니다")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<ApiSuccessResDto<IssueTempCodeResDto>> validateUser(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody ValidatePasswordReqDto dto
+    ) {
+        Long userId = userDetails.getId();
+
+        return ApiSuccessResUtil.success(userService.validateUserPassword(userId, dto), HttpStatus.OK);
+    }
+
     @GetMapping("/signup-info")
     @Operation(
             summary = "가입한 정보 조회 API",
@@ -159,4 +181,24 @@ public class UserController {
         return ApiSuccessResUtil.success(userService.findUserSignupInfo(recoveryCode), HttpStatus.OK);
     }
 
+    @GetMapping("/signup-info/password")
+    @Operation(summary = "email 가입 시 설정한 PW 확인 API")
+    @ResponseStatus(HttpStatus.OK)
+    @ApiExceptionResponse(
+            value = {
+                    @ApiExceptionData(errorCode = CustomExceptionData.INVALID_PARAMETER, details = "잘못된 정보 입니다")
+            }
+    )
+    public ResponseEntity<ApiSuccessResDto<IssueTempCodeResDto>> findUserSignupInfoPassword(
+            @Parameter(name = "rc", description = "recoveryCode", required = true)
+            @RequestParam(name = "rc") String recoveryCode,
+
+            @Parameter(name = "em", description = "email", required = true)
+            @Email @RequestParam(name = "rc") String email
+    ) {
+        return ApiSuccessResUtil.success(
+                userService.findUserSignupInfoPassword(recoveryCode, email),
+                HttpStatus.OK
+        );
+    }
 }

@@ -1,11 +1,9 @@
 package com.example.pumpit.domain.user.service;
 
-import com.example.pumpit.domain.user.dto.request.LoginUserByEmailReqDto;
-import com.example.pumpit.domain.user.dto.request.RegisterUserByEmailReqDto;
-import com.example.pumpit.domain.user.dto.request.UpdateUserReqDto;
+import com.example.pumpit.domain.user.dto.request.*;
 import com.example.pumpit.domain.user.dto.response.FindUserByIdResDto;
 import com.example.pumpit.domain.user.dto.response.FindUserSignupInfoResDto;
-import com.example.pumpit.domain.user.dto.response.LoginUserRequestTokenResDto;
+import com.example.pumpit.domain.user.dto.response.IssueTempCodeResDto;
 import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
 import com.example.pumpit.domain.user.repository.UserRepository;
 import com.example.pumpit.global.entity.User;
@@ -60,11 +58,13 @@ public class UserServiceImpl implements UserService {
         return userRepository.existsByEmail(encryptedEmail);
     }
 
-    private String createAndSetTempCode(Long userId) {
-        String tempCode = "tempCode:" + UUID.randomUUID();
-        redisService.set(tempCode, userId, Duration.ofSeconds(10));
+    private String createAndSetTempCode(String prefix, Long userId) {
+        String randomCode = UUID.randomUUID().toString();
+        String redisKey = prefix + ":" + randomCode;
 
-        return tempCode;
+        redisService.set(redisKey, userId, Duration.ofSeconds(10));
+
+        return randomCode;
     }
 
     @Override
@@ -87,7 +87,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public LoginUserRequestTokenResDto registerUserByEmail(RegisterUserByEmailReqDto dto) {
+    public IssueTempCodeResDto registerUserByEmail(RegisterUserByEmailReqDto dto) {
         if (existingUserByEmail(dto.email())) {
             throw new CustomException(CustomExceptionData.USER_DUPLICATED);
         }
@@ -105,15 +105,15 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
 
         try {
-            String tempCode = createAndSetTempCode(savedUser.getId());
-            return new LoginUserRequestTokenResDto(tempCode);
+            String tempCode = createAndSetTempCode("auth:temp", savedUser.getId());
+            return new IssueTempCodeResDto(tempCode);
         } catch (Exception e) {
             throw new CustomException(CustomExceptionData.INTERVAL_SERVER_ERROR, "Redis Error: " + e.getMessage());
         }
     }
 
     @Override
-    public LoginUserRequestTokenResDto loginUserByEmail(LoginUserByEmailReqDto dto) {
+    public IssueTempCodeResDto loginUserByEmail(LoginUserByEmailReqDto dto) {
         User user = findUserByEmail(dto.email());
 
         if (!BCryptService.matches(dto.password(), user.getPassword())) {
@@ -121,8 +121,8 @@ public class UserServiceImpl implements UserService {
         }
 
         try {
-            String tempCode = createAndSetTempCode(user.getId());
-            return new LoginUserRequestTokenResDto(tempCode);
+            String tempCode = createAndSetTempCode("auth:temp", user.getId());
+            return new IssueTempCodeResDto(tempCode);
         } catch (Exception e) {
             throw new CustomException(CustomExceptionData.INTERVAL_SERVER_ERROR, "Redis Error: " + e.getMessage());
         }
@@ -131,7 +131,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public LoginUserResDto getToken(String code, boolean remember) {
-        Long userId = redisService.get(code, Long.class);
+        String redisKey = String.format("auth:temp:%s", code);
+
+        Long userId = redisService.get(redisKey, Long.class);
 
         if (userId == null) {
             throw new CustomException(CustomExceptionData.AUTH_CODE_NOT_FOUND);
@@ -170,6 +172,38 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    @Transactional
+    public void changePassword(ChangePasswordReqDto dto) {
+        String redisKey = String.format("pw:temp:%s", dto.code());
+
+        Long userId = redisService.get(redisKey, Long.class);
+
+        if (userId == null) {
+            throw new CustomException(CustomExceptionData.AUTH_CODE_NOT_FOUND);
+        }
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(CustomExceptionData.USER_NOT_FOUND));
+
+        String encryptedPassword = BCryptService.encode(dto.password());
+
+        user.setPassword(encryptedPassword);
+    }
+
+    @Override
+    public IssueTempCodeResDto validateUserPassword(Long userId, ValidatePasswordReqDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(CustomExceptionData.USER_NOT_FOUND));
+
+        if (!BCryptService.matches(dto.password(), user.getPassword())) {
+            throw new CustomException(CustomExceptionData.USER_PASSWORD_NOT_MATCH);
+        }
+
+        String tempCode = createAndSetTempCode("pw:temp", userId);
+
+        return new IssueTempCodeResDto(tempCode);
+    }
+
     private String generateMaskedEmail(String email) {
         int atIdx = email.indexOf('@');
 
@@ -201,5 +235,23 @@ public class UserServiceImpl implements UserService {
         user.setRecoveryCode(encryptedCode);
 
         return new FindUserSignupInfoResDto(maskedEmail, oauthTypeList);
+    }
+
+    @Override
+    public IssueTempCodeResDto findUserSignupInfoPassword(String recoveryCode, String email) {
+        String codeEncrypted = aesCbcUtil.encrypt(recoveryCode);
+
+        User user = userRepository.findByRecoveryCode(codeEncrypted)
+                .orElseThrow(() -> new CustomException(CustomExceptionData.INVALID_PARAMETER, "잘못된 정보 입니다"));
+
+        String emailEncrypted = aesCbcUtil.encrypt(email);
+
+        if (user.getEmail() == null || user.getPassword() == null || !user.getEmail().equals(emailEncrypted)) {
+            throw new CustomException(CustomExceptionData.INVALID_PARAMETER, "잘못된 정보 입니다");
+        }
+
+        String tempCode = createAndSetTempCode("pw:temp", user.getId());
+
+        return new IssueTempCodeResDto(tempCode);
     }
 }
