@@ -11,11 +11,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @Component
-public class AESCBCUtil {
+public class AESUtil {
     private final String ALGORITHM = "AES/ECB/PKCS5Padding";
     private final String KEY;
 
-    public AESCBCUtil(@Value("${security.aes.key}") String key) {
+    public AESUtil(@Value("${security.aes.key}") String key) {
         this.KEY = key;
     }
 

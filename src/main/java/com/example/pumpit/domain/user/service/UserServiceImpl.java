@@ -31,29 +31,29 @@ public class UserServiceImpl implements UserService {
      */
     private final JwtService jwtService;
     private final RedisService redisService;
-    private final AESCBCUtil aesCbcUtil;
+    private final AESUtil aesUtil;
 
     public UserServiceImpl(
             UserRepository userRepository,
             JwtService jwtService,
             RedisService redisService,
-            AESCBCUtil aesCbcUtil
+            AESUtil aesUtil
     ) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.redisService = redisService;
-        this.aesCbcUtil = aesCbcUtil;
+        this.aesUtil = aesUtil;
     }
 
     private User findUserByEmail(String email) {
-        String encryptedEmail = aesCbcUtil.encrypt(email);
+        String encryptedEmail = aesUtil.encrypt(email);
 
         return userRepository.findByEmail(encryptedEmail)
                 .orElseThrow(() -> new CustomException(CustomExceptionData.USER_NOT_FOUND));
     }
 
     private boolean existingUserByEmail(String email) {
-        String encryptedEmail = aesCbcUtil.encrypt(email);
+        String encryptedEmail = aesUtil.encrypt(email);
 
         return userRepository.existsByEmail(encryptedEmail);
     }
@@ -75,8 +75,8 @@ public class UserServiceImpl implements UserService {
 
         return new FindUserByIdResDto(
                 user.getId(),
-                user.getEmail() != null ? aesCbcUtil.decrypt(user.getEmail()) : null,
-                user.getPhone() != null ? aesCbcUtil.decrypt(user.getPhone()) : null,
+                user.getEmail() != null ? aesUtil.decrypt(user.getEmail()) : null,
+                user.getPhone() != null ? aesUtil.decrypt(user.getPhone()) : null,
                 user.getNickName(),
                 user.getOauthAccounts() != null
                         ? user.getOauthAccounts().stream().map(UserOAuthAccount::getProvider).toList()
@@ -92,8 +92,8 @@ public class UserServiceImpl implements UserService {
             throw new CustomException(CustomExceptionData.USER_DUPLICATED);
         }
 
-        String encryptedEmail = aesCbcUtil.encrypt(dto.email());
-        String encryptedPhone = dto.phone() != null ? aesCbcUtil.encrypt(dto.phone()) : null;
+        String encryptedEmail = aesUtil.encrypt(dto.email());
+        String encryptedPhone = dto.phone() != null ? aesUtil.encrypt(dto.phone()) : null;
 
         User user = User.builder()
                 .email(encryptedEmail)
@@ -144,7 +144,7 @@ public class UserServiceImpl implements UserService {
 
         if (user.getRecoveryCode() == null) {
             recoveryCode = BCryptService.generateRecoveryCode();
-            String encryptedCode = aesCbcUtil.encrypt(recoveryCode);
+            String encryptedCode = aesUtil.encrypt(recoveryCode);
 
             user.setRecoveryCode(encryptedCode);
         }
@@ -167,7 +167,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (dto.phone() != null) {
-            String encryptedPhone = aesCbcUtil.encrypt(dto.phone());
+            String encryptedPhone = aesUtil.encrypt(dto.phone());
             user.setPhone(encryptedPhone);
         }
     }
@@ -220,17 +220,17 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public FindUserSignupInfoResDto findUserSignupInfo(String recoveryCode) {
-        String codeEncrypted = aesCbcUtil.encrypt(recoveryCode);
+        String codeEncrypted = aesUtil.encrypt(recoveryCode);
 
         User user = userRepository.findByRecoveryCode(codeEncrypted)
                 .orElseThrow(() -> new CustomException(CustomExceptionData.INVALID_PARAMETER, "잘못된 복구코드 입니다"));
 
-        String bcryptEmail = user.getEmail() != null ? aesCbcUtil.decrypt(user.getEmail()) : null;
+        String bcryptEmail = user.getEmail() != null ? aesUtil.decrypt(user.getEmail()) : null;
         String maskedEmail = bcryptEmail != null ? generateMaskedEmail(bcryptEmail) : null;
         List<UserOAuthProvider> oauthTypeList = user.getOauthAccounts().stream().map(UserOAuthAccount::getProvider).toList();
 
         String newRecoveryCode = BCryptService.generateRecoveryCode();
-        String encryptedCode = aesCbcUtil.encrypt(newRecoveryCode);
+        String encryptedCode = aesUtil.encrypt(newRecoveryCode);
 
         user.setRecoveryCode(encryptedCode);
 
@@ -239,12 +239,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public IssueTempCodeResDto findUserSignupInfoPassword(String recoveryCode, String email) {
-        String codeEncrypted = aesCbcUtil.encrypt(recoveryCode);
+        String codeEncrypted = aesUtil.encrypt(recoveryCode);
 
         User user = userRepository.findByRecoveryCode(codeEncrypted)
                 .orElseThrow(() -> new CustomException(CustomExceptionData.INVALID_PARAMETER, "잘못된 정보 입니다"));
 
-        String emailEncrypted = aesCbcUtil.encrypt(email);
+        String emailEncrypted = aesUtil.encrypt(email);
 
         if (user.getEmail() == null || user.getPassword() == null || !user.getEmail().equals(emailEncrypted)) {
             throw new CustomException(CustomExceptionData.INVALID_PARAMETER, "잘못된 정보 입니다");

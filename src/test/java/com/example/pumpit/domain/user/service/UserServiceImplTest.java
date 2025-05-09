@@ -8,7 +8,7 @@ import com.example.pumpit.domain.user.dto.response.LoginUserResDto;
 import com.example.pumpit.domain.user.repository.UserRepository;
 import com.example.pumpit.global.entity.User;
 import com.example.pumpit.global.exception.CustomException;
-import com.example.pumpit.global.util.AESCBCUtil;
+import com.example.pumpit.global.util.AESUtil;
 import com.example.pumpit.global.util.JwtService;
 import com.example.pumpit.global.util.BCryptService;
 import com.example.pumpit.global.util.RedisService;
@@ -27,22 +27,21 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
     @Mock private UserRepository userRepository;
     @Mock private JwtService jwtService;
     @Mock private RedisService redisService;
-    private AESCBCUtil aescbcUtil;
+    private AESUtil aesUtil;
 
     private UserServiceImpl userService;
 
     @BeforeEach
     void setUp() {
         String testKey = "abcdefghoabcdefghoabcdefghoaq442";
-        aescbcUtil = new AESCBCUtil(testKey);
-        userService = new UserServiceImpl(userRepository, jwtService, redisService, aescbcUtil);
+        aesUtil = new AESUtil(testKey);
+        userService = new UserServiceImpl(userRepository, jwtService, redisService, aesUtil);
     }
 
     @DisplayName("이메일 회원가입 성공")
@@ -55,7 +54,7 @@ public class UserServiceImplTest {
                 "01012345678"
         );
 
-        String encEmail = aescbcUtil.encrypt(dto.email());
+        String encEmail = aesUtil.encrypt(dto.email());
 
         given(userRepository.existsByEmail(encEmail)).willReturn(false);
         given(userRepository.save(any())).willAnswer(inv -> {
@@ -79,7 +78,7 @@ public class UserServiceImplTest {
     @Test
     void registerUserByEmail_Fail_userAlreadyExist() {
         String email = "test@exist.com";
-        String encEmail = aescbcUtil.encrypt(email);
+        String encEmail = aesUtil.encrypt(email);
         RegisterUserByEmailReqDto dto = new RegisterUserByEmailReqDto(
                 email,
                 "password123!",
@@ -100,7 +99,7 @@ public class UserServiceImplTest {
         String email = "login@test.com";
         String password = "password123!";
         String encodedPassword = BCryptService.encode(password);
-        String encEmail = aescbcUtil.encrypt(email);
+        String encEmail = aesUtil.encrypt(email);
 
         User user = User.builder().email(encEmail).password(encodedPassword).nickName("login").build();
 
@@ -118,7 +117,7 @@ public class UserServiceImplTest {
     @Test
     void loginUserByEmail_Fail_userNotFound() {
         String email = "login@test.com";
-        String encEmail = aescbcUtil.encrypt(email);
+        String encEmail = aesUtil.encrypt(email);
         given(userRepository.findByEmail(encEmail)).willReturn(Optional.empty());
 
         LoginUserByEmailReqDto dto = new LoginUserByEmailReqDto(email, "password123!");
@@ -132,7 +131,7 @@ public class UserServiceImplTest {
     @Test
     void loginUserByEmail_Fail_wrongPassword() {
         String email = "login@test.com";
-        String encEmail = aescbcUtil.encrypt(email);
+        String encEmail = aesUtil.encrypt(email);
 
         User user = User
                 .builder()
@@ -185,8 +184,8 @@ public class UserServiceImplTest {
         Long userId = 52L;
         String email = "find@test.com";
         String phone = "01012345678";
-        String encEmail = aescbcUtil.encrypt(email);
-        String encPhone = aescbcUtil.encrypt(phone);
+        String encEmail = aesUtil.encrypt(email);
+        String encPhone = aesUtil.encrypt(phone);
 
         User user = User
                 .builder()
@@ -201,7 +200,7 @@ public class UserServiceImplTest {
 
         FindUserByIdResDto result = userService.findUserById(userId);
 
-        assertThat(result.email()).isEqualTo(aescbcUtil.decrypt(user.getEmail()));
+        assertThat(result.email()).isEqualTo(aesUtil.decrypt(user.getEmail()));
         assertThat(result.nickName()).isEqualTo(user.getNickName());
     }
 
@@ -222,7 +221,7 @@ public class UserServiceImplTest {
     void updateUser_Success() {
         Long userId = 52L;
         String email = "update@test.com";
-        String encEmail = aescbcUtil.encrypt(email);
+        String encEmail = aesUtil.encrypt(email);
 
         User user = User
                 .builder()
@@ -313,9 +312,9 @@ public class UserServiceImplTest {
     void findUserSignupInfo_Success() {
         Long userId = 52L;
         String email = "find@test.com";
-        String encEmail = aescbcUtil.encrypt(email);
+        String encEmail = aesUtil.encrypt(email);
         String recoveryCode = BCryptService.generateRecoveryCode();
-        String encCode = aescbcUtil.encrypt(recoveryCode);
+        String encCode = aesUtil.encrypt(recoveryCode);
 
         User user = User
                 .builder()
@@ -336,7 +335,7 @@ public class UserServiceImplTest {
     @Test
     void findUserSignupInfo_Fail_InvalidCode() {
         String recoveryCode = BCryptService.generateRecoveryCode();
-        String encCode = aescbcUtil.encrypt(recoveryCode);
+        String encCode = aesUtil.encrypt(recoveryCode);
 
         given(userRepository.findByRecoveryCode(encCode)).willReturn(Optional.empty());
 
@@ -369,11 +368,11 @@ public class UserServiceImplTest {
     void findUserSignupInfo_PW_Success() {
         Long userId = 52L;
         String email = "find@test.com";
-        String encEmail = aescbcUtil.encrypt(email);
+        String encEmail = aesUtil.encrypt(email);
         String password = "find1234!@#$";
         String encPassword = BCryptService.encode(password);
         String recoveryCode = BCryptService.generateRecoveryCode();
-        String encCode = aescbcUtil.encrypt(recoveryCode);
+        String encCode = aesUtil.encrypt(recoveryCode);
 
         User user = User
                 .builder()
@@ -396,7 +395,7 @@ public class UserServiceImplTest {
     @Test
     void findUserSignupInfo_PW_Fail_InvalidCode() {
         String recoveryCode = BCryptService.generateRecoveryCode();
-        String encCode = aescbcUtil.encrypt(recoveryCode);
+        String encCode = aesUtil.encrypt(recoveryCode);
 
         given(userRepository.findByRecoveryCode(encCode)).willReturn(Optional.empty());
 
@@ -410,11 +409,11 @@ public class UserServiceImplTest {
     void findUserSignupInfo_PW_Fail_InvalidEmail() {
         Long userId = 52L;
         String email = "find@test.com";
-        String encEmail = aescbcUtil.encrypt(email);
+        String encEmail = aesUtil.encrypt(email);
         String password = "find1234!@#$";
         String encPassword = BCryptService.encode(password);
         String recoveryCode = BCryptService.generateRecoveryCode();
-        String encCode = aescbcUtil.encrypt(recoveryCode);
+        String encCode = aesUtil.encrypt(recoveryCode);
 
         User user = User
                 .builder()
